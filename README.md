@@ -1,1 +1,3 @@
-# IIP-PreProcessing-Demo
+# IIP-PreProcessing-Demo  
+
+![blueprint](doc/blueprint.png)
