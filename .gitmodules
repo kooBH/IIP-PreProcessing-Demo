@@ -1,0 +1,18 @@
+[submodule "bin"]
+	path = bin
+	url = https://github.com/koobh/QtBin
+[submodule "lib/KSpectrogram"]
+	path = lib/KSpectrogram
+	url = https://github.com/koobh/KSpectrogram
+[submodule "lib/Audio-Recorder"]
+	path = lib/Audio-Recorder
+	url = https://github.com/koobh/Audio-Recorder
+[submodule "lib/WAV"]
+	path = lib/WAV
+	url = https://github.com/koobh/WAV
+[submodule "lib/RtAudioWrapper"]
+	path = lib/RtAudioWrapper
+	url = https://github.com/koobh/RtAudioWrapper
+[submodule "lib/STFT"]
+	path = lib/STFT
+	url = https://github.com/koobh/STFT
