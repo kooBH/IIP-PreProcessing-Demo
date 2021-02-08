@@ -16,3 +16,9 @@
 [submodule "lib/STFT"]
 	path = lib/STFT
 	url = https://github.com/koobh/STFT
+[submodule "algorithm/MLDR"]
+	path = algorithm/MLDR
+	url = https://github.com/koobh/MLDR
+[submodule "algorithm/MAEC"]
+	path = algorithm/MAEC
+	url = https://github.com/koobh/MAEC
