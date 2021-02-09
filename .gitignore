@@ -13,3 +13,7 @@ _deps
 
 # temp files
 *.wav
+
+# config files
+path.txt
+config.json
