@@ -4,6 +4,7 @@
 
 #include "STFT.h"
 #include "WAV.h"
+#include "Config.h"
 
 class Processor : public QWidget {
 	Q_OBJECT
@@ -16,13 +17,17 @@ private:
 	int samplerate;
 	int frame_size;
 	int shift_size;
+	int reference;
 
 	double** raw;
 	double** data;
 	short* buf_out;
+	short* buf_in;
 
 	QString in_path;
   QString out_path;
+
+	ConfigParam params;
 	
 public:
 	Processor();
@@ -30,11 +35,9 @@ public:
 	void BuildModule(int channels,int samplerate,int frame_size,int shift_size,int reference=0);
 	void ClearModule();
 
-	void Process(QString path);
+	QString Process(QString path);
 
 public slots : 
-	void SlotBuildModule(int, int, int);
-	void SlotProcess(QString);
 
 signals : 
 	void SignalReturnOutput(QString);

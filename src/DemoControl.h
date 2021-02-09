@@ -9,6 +9,7 @@
 
 #include "KRecorder.h"
 #include "KAnalysis.h"
+#include "Processor.h"
 
 class DemoControl : public QWidget {
 	Q_OBJECT
@@ -24,7 +25,7 @@ private :
 
 	KRecorder widget_recorder;
 	KAnalysis widget_spectrogram;
-	//widget_algorithm
+	Processor processor;
 
 	bool isRecording;
 
@@ -35,11 +36,11 @@ public :
 signals :
 	void SignalToggleRecordnig();
 
-	void SignalDisplaySpectrogram(QString target_path);
-
 public slots:
 	void SlotProcess(QString input_path);
-	void SlotToggleRecordnig();
+	void SlotGetOutput(QString input_path);
+
+	void SlotToggleRecording();
 
 
 };
