@@ -1,6 +1,6 @@
 # IIP-PreProcessing-Demo  
 
 # Current    
-![current](doc/current.png)    
+![WIP](doc/WIP.png)    
 # Blueprint    
 ![blueprint](doc/blueprint.png)  
