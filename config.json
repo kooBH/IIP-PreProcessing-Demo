@@ -4,6 +4,11 @@
         "REAL_TIME": false,
         "SCALE": 1.0
     },
+    "OUTPUT": {
+        "CHANNEL": 1,
+        "DEVICE": 0,
+        "SAMPLE_RATE": 48000
+    },
     "PARAM": {
         "CHANNEL": {
             "OPTIONS": [

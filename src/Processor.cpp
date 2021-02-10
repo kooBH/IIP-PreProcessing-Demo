@@ -39,12 +39,17 @@ void Processor::BuildModule(int channels_, int samplerate_,int frame_size_, int 
   printf("shift_size : %d\n",shift_size);
 
   raw = new double* [channels];
-  for (int i = 0; i < channels; i++)
+  for (int i = 0; i < channels; i++) {
     raw[i] = new double[shift_size];
+    memset(raw[i], 0, sizeof(double) * shift_size);
+  }
+
 
   data = new double* [channels];
-  for (int i = 0; i < channels; i++)
-    data[i]= new double[frame_size];
+  for (int i = 0; i < channels; i++) {
+    data[i] = new double[frame_size + 2];
+    memset(data[i], 0, sizeof(double) *(frame_size+2));
+  }
 
   buf_in = new short[channels * shift_size];
   buf_out = new short[1 * shift_size];
