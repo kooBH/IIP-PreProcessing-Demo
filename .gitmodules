@@ -22,3 +22,6 @@
 [submodule "algorithm/MAEC"]
 	path = algorithm/MAEC
 	url = https://github.com/koobh/MAEC
+[submodule "lib/jsonConfig"]
+	path = lib/jsonConfig
+	url = https://github.com/koobh/jsonConfig
