@@ -15,6 +15,7 @@ set(INCL)
 # lib
 include(lib/RtAudioWrapper/RtAudio.cmake)
 include(lib/RtAudioWrapper/Libsamplerate.cmake)
+include(lib/jsonConfig/jsonConfig.cmake)
 
 include(lib/KSpectrogram/KSpectrogram.cmake)
 include(lib/Audio-Recorder/GUI/Recorder.cmake) 
@@ -41,6 +42,8 @@ display_elements(MOC_TARGET ${SRC_Qt_MOC})
 	list(APPEND SRC_Qt
 		src/DemoControl.cpp
 		src/Processor.cpp
+		
+		src/KError.h
 		)
 	
 	foreach(i  ${SRC_Qt_MOC})
@@ -66,15 +69,15 @@ display_elements(MOC_TARGET ${SRC_Qt_MOC})
 if(NOT MSVC)
 	list(APPEND LINKLIBS
 		m
-#		-fopenmp
+		-fopenmp
 	)
 	list(APPEND COMPILE_OPTION
-#		-fopenmp
+		-fopenmp
 		-O3
 	)
 else()
 	list(APPEND COMPILE_OPTION
-		#/openmp
+		/openmp
 		# /MP - compiled in mult-process : faster build time
 		/MP
 	)
@@ -82,6 +85,9 @@ endif()
 
 list(APPEND SRC
 	src/main.cpp
+	
+	algorithm/MLDR/MLDR.h
+	algorithm/MAEC/MAEC.h
 )
 
 list(APPEND SRC ${SRC_Qt} ${SRC_Qt_MOC})
@@ -93,6 +99,8 @@ list(APPEND INCL
 	lib/STFT/cpp
 	lib/WAV
 	lib/json
+	
+	algorithm
 	
 	# QtFramework
 	bin/include
