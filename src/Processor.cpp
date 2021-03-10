@@ -22,12 +22,12 @@ Processor::Processor():params(_CONFIG_JSON,"param") {
   isPlaying = false;
 
   channels = params["channel"];
-  samplerate = params["samplate"];
+  samplerate = params["samplerate"];
   frame_size = params["frame_size"];
   shift_size = params["shift_size"];
   reference = 0;
 
-  bit_algorithm = 0b0000'0000;
+  bit_algorithm = 0b0000'0001;
 
   BuildModule(channels, samplerate, frame_size, shift_size, reference);
 }
@@ -71,6 +71,7 @@ void Processor::BuildModule(int channels_, int samplerate_,int frame_size_, int 
   
   mldr = new MLDR(frame_size, max_channels);
   maec = new MAEC(frame_size, max_channels, max_reference);
+  //saec = new StereoAEC(frame_size, channels);
 }
 
 void Processor::ClearModule() {
@@ -129,7 +130,7 @@ QString Processor::Process(QString path_) {
   input->OpenFile(in_path.toStdString());
   output->NewFile(out_path.toStdString());
 
-  int length;
+  int length;  
 
   while(!input->IsEOF()){
     length = input->ReadUnit(buf_in, shift_size * channels);
@@ -137,10 +138,11 @@ QString Processor::Process(QString path_) {
     
     if (bit_algorithm & bit_MLDR)
       mldr->Process(data,channels);
-
+   
     if (bit_algorithm & bit_MAEC) {
       cnt++;
-      if (cnt < 3)
+      if (false)
+     //if (cnt < 4)
         ;
       else {
         length = ref->ReadUnit(buf_ref, shift_size * reference);
@@ -149,6 +151,7 @@ QString Processor::Process(QString path_) {
         stft_ref->stft(buf_ref, length, data_ref, reference);
 
         maec->Process(data, data_ref, channels, reference);
+        //saec->Process(data, data_ref[0], data_ref[1], data);
       }
     }
  

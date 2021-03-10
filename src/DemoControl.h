@@ -4,13 +4,16 @@
 #include <QLabel.h>
 #include <QString>
 #include <QFileDialog>
-
+#include <QDialog>
+#include <QStackedWidget>
 #include "BorderLayout.h"
 #include <QHBoxLayout>
-
+#include <QTextBrowser>
 #include "KRecorder.h"
 #include "KAnalysis.h"
 #include "Processor.h"
+
+#include <chrono>
 
 class DemoControl : public QWidget {
 	Q_OBJECT
@@ -23,9 +26,14 @@ private :
 		QComboBox combobox_algorithm;
 		QLabel label_refernce;
 		QPushButton btn_reference;
+		QPushButton btn_test;
 
 	KRecorder widget_recorder;
-	KAnalysis widget_spectrogram;
+	QStackedWidget widget_center;
+		KAnalysis widget_spectrogram;
+		QWidget widget_processing;
+		QVBoxLayout layout_processing;
+		QTextBrowser text_processing;
 	Processor processor;
 	
 	int idx_algo;
@@ -33,8 +41,9 @@ private :
 	unsigned char bit_MLDR = 0b0000'0001;
 	unsigned char bit_MAEC = 0b0000'0010;
 
-
 	bool isRecording;
+
+	long elapsed_sec = 0;
 
 public : 
 	DemoControl();
@@ -46,8 +55,11 @@ signals :
 	void SignalSetReference(QString);
 	void SignalSetSoundplayInfo(int, int);
 
+	void SignalProcessBegin();
+	void SignalProcessDone();
+
 public slots:
-	void SlotProcess(QString input_path);
+	void SlotProcess(QString input_path, double elapsed);
 	void SlotGetOutput(QString input_path);
 
 	void SlotToggleRecording();
@@ -56,4 +68,11 @@ public slots:
 
 	void SlotOpenReference();
 	void SlotGetSoundplayInfo(int,int);
+
+	void SlotProcessBegin();
+	void SlotProcessDone();
+
+	void SlotTest();
+
+
 };

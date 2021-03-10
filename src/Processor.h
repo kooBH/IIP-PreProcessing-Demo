@@ -32,6 +32,7 @@ private:
 
 	MLDR* mldr;
 	MAEC* maec;
+	StereoAEC *saec;
 
 	const int max_channels = 16;
 	const int max_reference = 6;

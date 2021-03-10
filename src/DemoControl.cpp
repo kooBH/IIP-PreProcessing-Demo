@@ -7,11 +7,17 @@ DemoControl::DemoControl() :QWidget() {
 		layout_control.addWidget(&combobox_algorithm);
 		layout_control.addWidget(&label_refernce);
 		layout_control.addWidget(&btn_reference);
+	  layout_control.addWidget(&btn_test);
 		widget_control.setLayout(&layout_control);
 
 		layout_main.addWidget(&widget_control, BorderLayout::North);
 		layout_main.addWidget(&widget_recorder, BorderLayout::West);
-		layout_main.addWidget(&widget_spectrogram, BorderLayout::Center);
+		layout_main.addWidget(&widget_center, BorderLayout::Center);
+			widget_center.addWidget(&widget_spectrogram);
+			widget_center.addWidget(&widget_processing);
+			widget_processing.setLayout(&layout_processing);
+			layout_processing.addWidget(&text_processing);
+
 
 		setLayout(&layout_main);
 	}
@@ -21,6 +27,8 @@ DemoControl::DemoControl() :QWidget() {
 		btn_start_stop.setText("Start");
 		btn_reference.setText("Reference");
 		btn_reference.setEnabled(false);
+
+		btn_test.setText("**TEST**");
 
 		widget_recorder.ToggleRecorderInteract(false);
 
@@ -32,17 +40,23 @@ DemoControl::DemoControl() :QWidget() {
       QLabel:disabled{color:gray;}\
       QPushButton:disabled{color:gray;}\
       QComboBox:disabled{color:gray;}\
+			QTextBrowser{background:rgb(246, 228, 247);color:black;}\
       \
       ");
 		combobox_algorithm.addItem("MLDR");
 		combobox_algorithm.addItem("MAEC");
-		combobox_algorithm.addItem("MAEC+MLDR");
+		combobox_algorithm.addItem("MAEC->MLDR");
+
+		QFont font_processing;
+		font_processing.setPointSizeF(16);
+		text_processing.setFont(font_processing);
+
 	}
 
 	/* parameters */{
 		isRecording = false;
 		idx_algo=0;
-		bit_algo = 0b0000'0000;
+		bit_algo = 0b0000'0001;
 	}
 
   /* Connect */{
@@ -63,26 +77,43 @@ DemoControl::DemoControl() :QWidget() {
 		// Record and process
 		QObject::connect(this, &DemoControl::SignalToggleRecordnig, &widget_recorder, &KRecorder::SlotToggleRecording);
 		QObject::connect(&widget_recorder, &KRecorder::SignalRecordFinished, this, &DemoControl::SlotProcess);
+		QObject::connect(this, &DemoControl::SignalProcessBegin, this, &DemoControl::SlotProcessBegin);
+		QObject::connect(this, &DemoControl::SignalProcessDone, this, &DemoControl::SlotProcessDone);
+
+		// Test
+		QObject::connect(&btn_test, &QPushButton::clicked, this, &DemoControl::SlotTest);
 	}
+
+
 }
 
 DemoControl::~DemoControl() {
 
 }
 
-void DemoControl::SlotProcess(QString path) {
-	printf("Process : %s\n",path.toStdString().c_str());
+void DemoControl::SlotProcess(QString path,double input_elapsed) {
 
-	widget_spectrogram.ToggleHide();
+	text_processing.setText("");
+	this->setEnabled(false);
+	text_processing.append("Input : " + QString::number(input_elapsed) + " sec");
+	emit(SignalProcessBegin());
+	auto begin = std::chrono::high_resolution_clock::now();
+
 	QString output = processor.Process(path);
 
+	auto elapsed = std::chrono::high_resolution_clock::now() - begin;
+	elapsed_sec = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+	text_processing.append("Process : "+QString::number((double)elapsed_sec/1000) + " sec");
+	text_processing.append("Drawing Spectrograms...");
+	this->repaint();
 	widget_spectrogram.LoadFile(output.toStdString().c_str());
 	widget_spectrogram.LoadFile(path.toStdString().c_str());
+	emit(SignalProcessDone());
 
-	widget_spectrogram.ToggleHide();
-
+	this->setEnabled(true);
 	if (bit_algo & bit_MAEC) {
 		btn_start_stop.setEnabled(false);
+		label_refernce.setText("NULL");
 	}
 	
 	/* read wav */
@@ -96,6 +127,10 @@ void DemoControl::SlotGetOutput(QString path) {
 
 void DemoControl::SlotToggleRecording() {
 	isRecording = !isRecording;
+	if (isRecording)
+		btn_start_stop.setText("STOP");
+	else
+		btn_start_stop.setText("START");
 	processor.SlotSoundPlay();
 	emit(SignalToggleRecordnig());
 }
@@ -156,6 +191,23 @@ void  DemoControl::SlotOpenReference() {
 	emit(SignalSetReference(file_path));
 }
 
+
 void DemoControl::SlotGetSoundplayInfo(int device_, int samplerate_) {
 	emit(SignalSetSoundplayInfo(device_, samplerate_));
+}
+
+void DemoControl::SlotTest() {
+
+}
+
+void DemoControl::SlotProcessBegin() {
+	printf("DemoControl::SlotProcessBegin()\n");
+	widget_center.setCurrentIndex(1);
+	this->repaint();
+}
+
+void DemoControl::SlotProcessDone() {
+	printf("DemoControl::SlotProcessDone()\n");
+	widget_center.setCurrentIndex(0);
+	this->repaint();
 }
