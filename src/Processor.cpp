@@ -120,11 +120,19 @@ QString Processor::Process(QString path_) {
   /* Set I/O */
   input = new WAV();
   output = new WAV(1, samplerate,frame_size,shift_size);
+  ref->Rewind();
 
-  if (bit_algorithm & bit_MAEC) {
-    ref->Rewind();
-    if (buf_ref)delete[] buf_ref;
-    buf_ref = new short[reference * shift_size];
+  // 48k or 16k
+ int ref_samplerate = ref->GetSampleRate();
+  {
+    if (bit_algorithm & bit_MAEC) {
+      ref->Rewind();
+      if (buf_ref)delete[] buf_ref;
+      if (ref_samplerate != 48000)
+        buf_ref = new short[reference * shift_size];
+      else
+        buf_ref = new short[reference * shift_size * 3];
+    }
   }
 
   input->OpenFile(in_path.toStdString());
@@ -132,6 +140,48 @@ QString Processor::Process(QString path_) {
 
   int length;  
 
+  /** Sync reference using croess correlation **/
+  if (bit_algorithm & bit_MAEC) {
+    int len_input = input->GetNumOfSamples();
+    int len_ref   = ref->GetNumOfSamples();
+
+    int ch_input = input->GetChannels();
+    int ch_ref = ref->GetChannels();
+
+    short* buf_input  = new short[len_input*ch_input];
+    short* buf_ref = new short[len_ref*ch_ref];
+    memset(buf_input, 0, sizeof(short) * (len_input * ch_input));
+    memset(buf_ref, 0, sizeof(short) * (len_ref * ch_ref));
+   
+    input->ReadUnit(buf_input, len_input*ch_input);
+    ref->ReadUnit(buf_ref, len_ref*ch_ref);
+
+    for (int i = 0; i < len_input; i++)
+      buf_input[i] = buf_input[ch_input * i];
+    for (int i = 0; i < len_ref; i++)
+      buf_ref[i] = buf_ref[ch_ref * i];
+    
+    int len_min = std::min(len_input, len_ref);
+
+    delay = align::getDelay(buf_input, buf_ref,len_min);
+
+    ref->Rewind();
+    input->Rewind();
+
+    /*  input is early */
+    if (delay > 0) {
+      ref->ReadUnit(buf_input, delay * ch_input);
+    }
+    /*  reference is early */
+    else {
+      input->ReadUnit(buf_input, -delay * ch_ref);
+    }
+
+    delete[] buf_input;
+    delete[] buf_ref;
+  }
+
+  /* Process one shift each */
   while(!input->IsEOF()){
     length = input->ReadUnit(buf_in, shift_size * channels);
     stft->stft(buf_in, length, data,channels);
@@ -141,18 +191,28 @@ QString Processor::Process(QString path_) {
    
     if (bit_algorithm & bit_MAEC) {
       cnt++;
-      if (false)
-     //if (cnt < 4)
-        ;
-      else {
+      
+
+      // 48k or 16k
+      if (ref_samplerate != 48000) {
         length = ref->ReadUnit(buf_ref, shift_size * reference);
         if (length != shift_size)
           memset(buf_ref, 0, sizeof(short) * shift_size);
-        stft_ref->stft(buf_ref, length, data_ref, reference);
-
-        maec->Process(data, data_ref, channels, reference);
-        //saec->Process(data, data_ref[0], data_ref[1], data);
       }
+      else {
+        length = ref->ReadUnit(buf_ref, shift_size * reference * 3);
+        int i = 0, j = 0, k = 0;
+        for (i = 0; i < shift_size; i++) {
+          j = 3 * reference * i;
+          for (k = 0; k < reference; k++)
+            buf_ref[reference * i + k] = buf_ref[j + k];
+        }
+      }
+      
+      //length = ref->ReadUnit(buf_ref, shift_size * reference);
+      stft_ref->stft(buf_ref, length, data_ref, reference);
+      maec->Process(data, data_ref, channels, reference);
+      //saec->Process(data, data_ref[0], data_ref[1], data);
     }
  
     stft->istft(data[0], buf_out);

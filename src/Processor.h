@@ -7,6 +7,7 @@
 #include "WAV.h"
 #include "jsonConfig.h"
 #include "RtOutput.h"
+#include "align.h"
 
 #include "MLDR/MLDR.h"
 #include "MAEC/MAEC.h"
@@ -32,7 +33,7 @@ private:
 
 	MLDR* mldr;
 	MAEC* maec;
-	StereoAEC *saec;
+	int delay;
 
 	const int max_channels = 16;
 	const int max_reference = 6;
