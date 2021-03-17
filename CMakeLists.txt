@@ -99,6 +99,7 @@ list(APPEND INCL
 	lib/STFT/cpp
 	lib/WAV
 	lib/json
+	lib/align
 	
 	algorithm
 	

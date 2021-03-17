@@ -25,3 +25,6 @@
 [submodule "lib/jsonConfig"]
 	path = lib/jsonConfig
 	url = https://github.com/koobh/jsonConfig
+[submodule "lib/align"]
+	path = lib/align
+	url = https://github.com/koobh/align
