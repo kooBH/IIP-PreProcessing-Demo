@@ -12,6 +12,8 @@
 #include "MLDR/MLDR.h"
 #include "MAEC/MAEC.h"
 
+
+
 class Processor : public QWidget {
 	Q_OBJECT
 private:
@@ -48,7 +50,8 @@ private:
 
 	short* buf_out;
 	short* buf_in;
-	short* buf_ref;
+	short* buf_sp_ref;  // buffer for reference play
+	short* buf_ref;     // buffer for reference process
 
 	QString in_path;
   QString out_path;

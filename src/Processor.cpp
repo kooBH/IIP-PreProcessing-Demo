@@ -10,6 +10,7 @@ Processor::Processor():params(_CONFIG_JSON,"param") {
   input = nullptr;
   output = nullptr;
   buf_out = nullptr;
+  buf_sp_ref=nullptr;
   buf_ref = nullptr;
 
   sp = nullptr;
@@ -70,7 +71,7 @@ void Processor::BuildModule(int channels_, int samplerate_,int frame_size_, int 
   stft_ref = new STFT(max_reference, frame_size, shift_size);
   
   mldr = new MLDR(frame_size, max_channels);
-  maec = new MAEC(frame_size, max_channels, max_reference);
+  maec = new MAEC(frame_size, max_channels, max_reference,false);
   //saec = new StereoAEC(frame_size, channels);
 }
 
@@ -83,12 +84,14 @@ void Processor::ClearModule() {
   delete[] buf_out;
 
   delete stft;
+  delete stft_ref;
   delete mldr;
-  delete maec;
 
+  buf_in = nullptr;
   buf_out = nullptr;
   data = nullptr;
   stft = nullptr;
+  stft_ref = nullptr;
   mldr = nullptr;
   maec = nullptr;
 
@@ -98,13 +101,8 @@ void Processor::ClearModule() {
   delete[] data_ref;
   delete[] buf_ref;
 
-  delete stft_ref;
-  delete maec;
-
-  buf_out = nullptr;
+  buf_ref = nullptr;
   data_ref = nullptr;
-  stft_ref = nullptr;
-  maec = nullptr;
 }
 
 QString Processor::Process(QString path_) {
@@ -120,19 +118,11 @@ QString Processor::Process(QString path_) {
   /* Set I/O */
   input = new WAV();
   output = new WAV(1, samplerate,frame_size,shift_size);
-  ref->Rewind();
 
-  // 48k or 16k
- int ref_samplerate = ref->GetSampleRate();
-  {
-    if (bit_algorithm & bit_MAEC) {
-      ref->Rewind();
-      if (buf_ref)delete[] buf_ref;
-      if (ref_samplerate != 48000)
-        buf_ref = new short[reference * shift_size];
-      else
-        buf_ref = new short[reference * shift_size * 3];
-    }
+  if (bit_algorithm & bit_MAEC) {
+    ref->Rewind();
+    if (buf_ref)delete[] buf_ref;
+    buf_ref = new short[reference * shift_size];
   }
 
   input->OpenFile(in_path.toStdString());
@@ -148,37 +138,38 @@ QString Processor::Process(QString path_) {
     int ch_input = input->GetChannels();
     int ch_ref = ref->GetChannels();
 
-    short* buf_input  = new short[len_input*ch_input];
-    short* buf_ref = new short[len_ref*ch_ref];
-    memset(buf_input, 0, sizeof(short) * (len_input * ch_input));
-    memset(buf_ref, 0, sizeof(short) * (len_ref * ch_ref));
+    short* tmp_buf_input  = new short[len_input*ch_input];
+    short* tmp_buf_ref = new short[len_ref*ch_ref];
+    memset(tmp_buf_input, 0, sizeof(short) * (len_input * ch_input));
+    memset(tmp_buf_ref, 0, sizeof(short) * (len_ref * ch_ref));
    
-    input->ReadUnit(buf_input, len_input*ch_input);
-    ref->ReadUnit(buf_ref, len_ref*ch_ref);
+    input->ReadUnit(tmp_buf_input, len_input*ch_input);
+    ref->ReadUnit(tmp_buf_ref, len_ref*ch_ref);
 
-    for (int i = 0; i < len_input; i++)
-      buf_input[i] = buf_input[ch_input * i];
-    for (int i = 0; i < len_ref; i++)
-      buf_ref[i] = buf_ref[ch_ref * i];
+    //Sync based on first channel
+    for (int i = 0; i < len_ref; i++) {
+          tmp_buf_ref[i] = tmp_buf_ref[ch_ref * i];
+    }
     
-    int len_min = std::min(len_input, len_ref);
+    int len_min;
+    len_min = std::min(len_input, len_ref);
 
-    delay = align::getDelay(buf_input, buf_ref,len_min);
+    delay = align::getDelay(tmp_buf_input, tmp_buf_ref,len_min);
 
     ref->Rewind();
     input->Rewind();
 
     /*  input is early */
     if (delay > 0) {
-      ref->ReadUnit(buf_input, delay * ch_input);
+      ref->ReadUnit(tmp_buf_ref, delay * ch_ref);
     }
     /*  reference is early */
     else {
-      input->ReadUnit(buf_input, -delay * ch_ref);
+      input->ReadUnit(tmp_buf_input, -delay * ch_input);
     }
 
-    delete[] buf_input;
-    delete[] buf_ref;
+    delete[] tmp_buf_input;
+    delete[] tmp_buf_ref;
   }
 
   /* Process one shift each */
@@ -190,26 +181,8 @@ QString Processor::Process(QString path_) {
       mldr->Process(data,channels);
    
     if (bit_algorithm & bit_MAEC) {
-      cnt++;
+      length = ref->ReadUnit(buf_ref, shift_size * reference);
       
-
-      // 48k or 16k
-      if (ref_samplerate != 48000) {
-        length = ref->ReadUnit(buf_ref, shift_size * reference);
-        if (length != shift_size)
-          memset(buf_ref, 0, sizeof(short) * shift_size);
-      }
-      else {
-        length = ref->ReadUnit(buf_ref, shift_size * reference * 3);
-        int i = 0, j = 0, k = 0;
-        for (i = 0; i < shift_size; i++) {
-          j = 3 * reference * i;
-          for (k = 0; k < reference; k++)
-            buf_ref[reference * i + k] = buf_ref[j + k];
-        }
-      }
-      
-      //length = ref->ReadUnit(buf_ref, shift_size * reference);
       stft_ref->stft(buf_ref, length, data_ref, reference);
       maec->Process(data, data_ref, channels, reference);
       //saec->Process(data, data_ref[0], data_ref[1], data);
@@ -229,13 +202,9 @@ QString Processor::Process(QString path_) {
     maec->Clear();
     ref->Finish();
     delete ref;
-    delete[] buf_ref;
-    buf_ref = nullptr;
   }
   delete input;
   delete output;
-
-  
 
 //  emit(SignalReturnOutput(out_path));
   return out_path;
@@ -277,11 +246,11 @@ void Processor::SlotSoundPlay() {
     ref->Rewind();
     len_ref = ref->GetSize() / 2;
 
-    if (buf_ref)delete[] buf_ref;
-    buf_ref = new short[len_ref];
-    ref->ReadUnit(buf_ref, len_ref);
+    if (buf_sp_ref)delete[] buf_sp_ref;
+    buf_sp_ref = new short[len_ref];
+    ref->ReadUnit(buf_sp_ref, len_ref);
 
-    sp->FullBufLoad(buf_ref, len_ref);
+    sp->FullBufLoad(buf_sp_ref, len_ref);
     sp->Start();
     isPlaying = true;
   }
