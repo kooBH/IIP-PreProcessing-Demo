@@ -28,6 +28,6 @@
 [submodule "lib/align"]
 	path = lib/align
 	url = https://github.com/koobh/align
-[submodule ".\\algorithm\\OverIVA_Clique_RLS"]
-	path = .\\algorithm\\OverIVA_Clique_RLS
+[submodule "algorithm/OverIVA_Clique_RLS"]
+	path = algorithm/OverIVA_Clique_RLS
 	url = https://github.com/hido710/OverIVA_Clique_RLS
