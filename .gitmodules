@@ -30,4 +30,4 @@
 	url = https://github.com/koobh/align
 [submodule ".\\algorithm\\OverIVA_Clique_RLS"]
 	path = .\\algorithm\\OverIVA_Clique_RLS
-	url = https://github.com/hido710/OverIVA_Clique_RLS.git
+	url = https://github.com/hido710/OverIVA_Clique_RLS
