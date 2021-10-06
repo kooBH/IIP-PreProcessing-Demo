@@ -31,3 +31,6 @@
 [submodule "algorithm/OverIVA_Clique_RLS"]
 	path = algorithm/OverIVA_Clique_RLS
 	url = https://github.com/hido710/OverIVA_Clique_RLS
+[submodule "lib/KWidgetASR"]
+	path = lib/KWidgetASR
+	url = https://github.com/koobh/KWidgetASR
