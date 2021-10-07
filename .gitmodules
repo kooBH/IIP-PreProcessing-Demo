@@ -34,3 +34,6 @@
 [submodule "lib/KWidgetASR"]
 	path = lib/KWidgetASR
 	url = https://github.com/koobh/KWidgetASR
+[submodule "lib/json"]
+	path = lib/json
+	url = https://github.com/nlohmann/json
