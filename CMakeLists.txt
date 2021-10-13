@@ -1,6 +1,6 @@
 # CMAKE version of Ubuntu 16.04 is 3.5.
 cmake_minimum_required(VERSION 3.5)
-project(IIP-PreProcessing-Demo)
+project(IIP-PreProcessing-Demo-alpha)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,19 +13,22 @@ set(SRC_Qt)
 set(INCL)
 
 # lib
+
 include(lib/RtAudioWrapper/RtAudio.cmake)
 include(lib/RtAudioWrapper/Libsamplerate.cmake)
 include(lib/jsonConfig/jsonConfig.cmake)
 
 include(lib/KSpectrogram/KSpectrogram.cmake)
 include(lib/Audio-Recorder/GUI/Recorder.cmake) 
+include(lib/KWidgetASR/KWidgetASR.cmake)
+include(lib/AEC_BF_loopback/AEC_BF_loopback.cmake)
 
 macro(display_elements
 	DISPLAY_MESSAGE
 	LIST_TO_DISPLAY)
     message("[ ${DISPLAY_MESSAGE} ]")
     foreach(_DISPLAY_ELEMENT ${LIST_TO_DISPLAY})
-	message(STATUS ${_DISPLAY_ELEMENT})
+		message(STATUS ${_DISPLAY_ELEMENT})
     endforeach()
 endmacro()
 
@@ -42,7 +45,6 @@ display_elements(MOC_TARGET ${SRC_Qt_MOC})
 	list(APPEND SRC_Qt
 		src/DemoControl.cpp
 		src/Processor.cpp
-		
 		src/KError.h
 		)
 	
@@ -128,6 +130,9 @@ elseif(MSVC)
 		debug ${PROJECT_SOURCE_DIR}/bin/lib/Qt6OpenGLWidgetsd.lib optimized ${PROJECT_SOURCE_DIR}/bin/lib/Qt6OpenGLWidgets.lib	
 	)
 endif()
+
+display_elements(INCL ${INCL})
+message(${INCL})
 
 #display_elements(SRC "${SRC}")
 #display_elements(COMPILE_OPTION ${COMPILE_OPTION})

@@ -1,13 +1,14 @@
 #include "DemoControl.h"
 
-DemoControl::DemoControl() :QWidget() {
+DemoControl::DemoControl() :QWidget(){
 
 	/* Add Widgets */	{
 		layout_control.addWidget(&btn_start_stop);
 		layout_control.addWidget(&combobox_algorithm);
+		//layout_control.addWidget(&label_realtime);
+		//layout_control.addWidget(&check_realtime);
 		layout_control.addWidget(&label_refernce);
 		layout_control.addWidget(&btn_reference);
-	  layout_control.addWidget(&btn_test);
 		widget_control.setLayout(&layout_control);
 
 		layout_main.addWidget(&widget_control, BorderLayout::North);
@@ -17,18 +18,17 @@ DemoControl::DemoControl() :QWidget() {
 			widget_center.addWidget(&widget_processing);
 			widget_processing.setLayout(&layout_processing);
 			layout_processing.addWidget(&text_processing);
-
+		layout_main.addWidget(&widget_ASR, BorderLayout::South);
 
 		setLayout(&layout_main);
 	}
 
 	/* Configure Widgets */{
-		setFixedSize(QSize(1400, 700));
+		setFixedSize(QSize(1600, 900));
 		btn_start_stop.setText("Start");
 		btn_reference.setText("Reference");
 		btn_reference.setEnabled(false);
 
-		btn_test.setText("**TEST**");
 
 		widget_recorder.ToggleRecorderInteract(false);
 
@@ -46,10 +46,20 @@ DemoControl::DemoControl() :QWidget() {
 		combobox_algorithm.addItem("MLDR");
 		combobox_algorithm.addItem("MAEC");
 		combobox_algorithm.addItem("MAEC->MLDR");
+		combobox_algorithm.addItem("AEC_BF_loopback");
+
+		label_realtime.setText("Real Time");
+		label_realtime.setFixedWidth(100);
+
 
 		QFont font_processing;
 		font_processing.setPointSizeF(16);
 		text_processing.setFont(font_processing);
+
+		std::ifstream ifs("../private/config.json");
+		json j = json::parse(ifs);
+		widget_ASR.Init(j["key"].get<std::string>(), j["language"].get<std::string>());
+		widget_ASR.label_result.setFixedHeight(200);
 
 	}
 
@@ -60,12 +70,21 @@ DemoControl::DemoControl() :QWidget() {
 	}
 
   /* Connect */{
-		QObject::connect(&btn_start_stop, &QPushButton::clicked, this, &DemoControl::SlotToggleRecording);
+
+
+	  // batch routine
+		//QObject::connect(&btn_start_stop, &QPushButton::clicked, this, &DemoControl::SlotToggleRecording);
+
+		// realtime routine 
+		QObject::connect(&btn_start_stop, &QPushButton::clicked, this, &DemoControl::SlotToggleProcess);
 		//QObject::connect(&btn_start_stop, &QPushButton::clicked, &processor,&Processor::SlotSoundPlay);
+		QObject::connect(&processor, &Processor::SignalReturnOutputs, this, &DemoControl::SlotGetOutputs);
 
 		// set algo
 		QObject::connect(&combobox_algorithm, &QComboBox::currentIndexChanged, this, &DemoControl::SlotComboAlgo);
 		QObject::connect(this, &DemoControl::SignalSetAlgo, &processor, &Processor::SlotGetAlgo);
+
+		QObject::connect(&check_realtime, &QCheckBox::stateChanged, this, &DemoControl::SlotToggleRealtime);
 
 		// open reference file
 		QObject::connect(&btn_reference, &QPushButton::clicked, this, &DemoControl::SlotOpenReference);
@@ -80,8 +99,6 @@ DemoControl::DemoControl() :QWidget() {
 		QObject::connect(this, &DemoControl::SignalProcessBegin, this, &DemoControl::SlotProcessBegin);
 		QObject::connect(this, &DemoControl::SignalProcessDone, this, &DemoControl::SlotProcessDone);
 
-		// Test
-		QObject::connect(&btn_test, &QPushButton::clicked, this, &DemoControl::SlotTest);
 	}
 
 
@@ -109,6 +126,7 @@ void DemoControl::SlotProcess(QString path,double input_elapsed) {
 	widget_spectrogram.LoadFile(output.toStdString().c_str());
 	widget_spectrogram.LoadFile(path.toStdString().c_str());
 	emit(SignalProcessDone());
+	widget_ASR.Load(output.toStdString());
 
 	this->setEnabled(true);
 	if (bit_algo & bit_MAEC) {
@@ -124,7 +142,13 @@ void DemoControl::SlotProcess(QString path,double input_elapsed) {
 void DemoControl::SlotGetOutput(QString path) {
 	widget_spectrogram.LoadFile(path.toStdString().c_str());
 }
+void DemoControl::SlotGetOutputs(QString path_out, QString path_in) {
+	widget_spectrogram.LoadFile(path_out.toStdString().c_str());
+	widget_spectrogram.LoadFile(path_in.toStdString().c_str());
+	widget_ASR.Load(path_out.toStdString());
+}
 
+// Toggle For Batch Process
 void DemoControl::SlotToggleRecording() {
 	isRecording = !isRecording;
 	if (isRecording)
@@ -134,6 +158,26 @@ void DemoControl::SlotToggleRecording() {
 	processor.SlotSoundPlay();
 	emit(SignalToggleRecordnig());
 }
+
+// Toggle For Real Time Process
+void DemoControl::SlotToggleProcess() {
+	printf("SlotToggleProcess %d\n",isRecording);
+	isRecording = !isRecording;
+
+	// Run
+	if (isRecording) {
+		processor.Process();
+		btn_start_stop.setText("STOP");
+	}
+	// Stop
+	else {
+		processor.Stop();
+		btn_start_stop.setText("START");
+	}
+	// For AEC reference Play
+	processor.SlotSoundPlay();
+}
+
 
 /* 
    index of algorithm
@@ -154,6 +198,10 @@ void DemoControl::SlotComboAlgo(int idx_) {
 	else if (idx_algo == 2) {
 		bit_algo|= bit_MLDR;
 		bit_algo|= bit_MAEC;
+	}
+	// AEC_BF_loopback
+	else if (idx_algo == 3) {
+		bit_algo |= bit_AEC_BF_loopback;
 	}
 	else {
 		KError("DemoControl::SlotComboAlgo::Unknown idx_algo");
@@ -193,6 +241,8 @@ void  DemoControl::SlotOpenReference() {
 
 
 void DemoControl::SlotGetSoundplayInfo(int device_, int samplerate_) {
+	device_output = device_;
+	samplerate_output = samplerate_;
 	emit(SignalSetSoundplayInfo(device_, samplerate_));
 }
 
@@ -210,4 +260,14 @@ void DemoControl::SlotProcessDone() {
 	printf("DemoControl::SlotProcessDone()\n");
 	widget_center.setCurrentIndex(0);
 	this->repaint();
+}
+
+
+void DemoControl::SlotToggleRealtime(int state) {
+	if (state == 2) {
+		is_real_time = true;
+	}
+	else {
+		is_real_time = false;
+	}
 }

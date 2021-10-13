@@ -6,12 +6,15 @@
 #include "STFT.h"
 #include "WAV.h"
 #include "jsonConfig.h"
+#include "RtInput.h"
 #include "RtOutput.h"
 #include "align.h"
 
 #include "MLDR/MLDR.h"
 #include "MAEC/MAEC.h"
+#include "AEC_BF_loopback.h"
 
+#include <thread>
 
 
 class Processor : public QWidget {
@@ -27,14 +30,22 @@ private:
 	WAV* output;
 	WAV* ref;
 
+	RtInput* rt_input;
 	RtOutput* sp;
-	int soundplay_device;
-	int soundplay_samplerate;
+
+	int device_input;
+	int device_output;
+	int samplerate_output;
+
+	std::thread* thread_run;
+	bool is_thread_run=false;
+
   int len_ref;
 	bool isPlaying;
 
 	MLDR* mldr;
 	MAEC* maec;
+	AEC_BF_loopback* aec_bf_loopback;
 	int delay;
 
 	const int max_channels = 16;
@@ -62,22 +73,27 @@ private:
 	unsigned char bit_algorithm;
 	const unsigned char bit_MLDR = 0b0000'0001;
 	const unsigned char bit_MAEC = 0b0000'0010;
+	const unsigned char bit_AEC_BF_loopback = 0b0000'0100;
 
 public:
 	Processor();
 	~Processor();
-	void BuildModule(int channels,int samplerate,int frame_size,int shift_size,int reference=0);
+	void BuildModule(int device, int channels,int samplerate,int frame_size,int shift_size,int reference=0);
 	void ClearModule();
-
+	
+	void Run();
+	void Stop();
+	void Process();
 	QString Process(QString path);
+	void SetDeivce(int);
 
 public slots : 
 	void SlotGetAlgo(unsigned char bit);
 	void SlotReference(QString reference_path);
 	void SlotSoundplayInfo(int device_, int samplerate_);
-
 	void SlotSoundPlay();
 signals : 
 	void SignalReturnOutput(QString);
+	void SignalReturnOutputs(QString,QString);
 	
 };
