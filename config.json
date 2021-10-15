@@ -1,20 +1,6 @@
 {
-    "PARAM": {
-        "channel": {
-            "VALUE": 8
-        },
-        "frame_size": {
-            "VALUE": 512
-        },
-        "samplerate": {
-            "VALUE": 16000
-        },
-        "shift_size": {
-            "VALUE": 128
-        }
-    },
     "input": {
-        "device": 7,
+        "device": 6,
         "real_time": false,
         "scale": 1.0
     },
@@ -43,7 +29,7 @@
                 15,
                 16
             ],
-            "value": 8
+            "value": 4
         },
         "frame_size": {
             "options": [
@@ -54,6 +40,13 @@
                 8192
             ],
             "value": 512
+        },
+        "reference": {
+            "options": [
+                0,
+                2
+            ],
+            "value": 2
         },
         "samplerate": {
             "options": [
