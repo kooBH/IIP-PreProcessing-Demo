@@ -37,6 +37,6 @@
 [submodule "lib/json"]
 	path = lib/json
 	url = https://github.com/nlohmann/json
-[submodule "lib/AEC_BF_loopback"]
-	path = lib/AEC_BF_loopback
+[submodule "algorithm/AEC_BF_loopback"]
+	path = algorithm/AEC_BF_loopback
 	url = https://github.com/koobh/AEC_BF_loopback
